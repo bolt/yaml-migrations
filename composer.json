@@ -1,5 +1,5 @@
 {
-    "name": "bobdenotter/yaml-migrations",
+    "name": "bolt/yaml-migrations",
     "description": "A library to facilitate migrations for YAML configuration files",
     "type": "library",
     "license": "MIT",
@@ -31,6 +31,9 @@
         "symplify/easy-coding-standard": "^8.3",
         "phpunit/phpunit": "^8.5"
     },
+    "replace": {
+        "bobdenotter/yaml-migrations": "*"
+    }
     "bin": [
         "bin/yaml-migrate"
     ],
