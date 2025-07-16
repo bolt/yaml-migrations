@@ -13,9 +13,9 @@
         "bolt/commando": "^0.4 || ^1.0",
         "webimpress/safe-writer": "^2.1",
         "composer/semver": "^3.2",
-        "symfony/yaml": "^5.1",
-        "symfony/var-dumper": "^5.1",
-        "symfony/finder": "^5.1"
+        "symfony/yaml": "^5.1 || ^6.0 || ^7.0",
+        "symfony/var-dumper": "^5.1 || ^6.0 || ^7.0",
+        "symfony/finder": "^5.1 || ^6.0 || ^7.0"
     },
     "autoload": {
         "psr-4": {
@@ -28,8 +28,8 @@
         }
     },
     "require-dev": {
-        "symplify/easy-coding-standard": "^8.3",
-        "phpunit/phpunit": "^8.5"
+        "symplify/easy-coding-standard": "^12.0",
+        "phpunit/phpunit": ">=8.5"
     },
     "replace": {
         "bobdenotter/yaml-migrations": "*"

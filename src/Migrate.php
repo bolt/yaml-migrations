@@ -163,7 +163,7 @@ class Migrate
             $result = $this->doMigrationAdd($data, $migration);
         } elseif (\array_key_exists('delete', $migration)) {
             $result = $this->doMigrationDelete($migration);
-        } elseif(\array_key_exists('remove', $migration)) {
+        } elseif (\array_key_exists('remove', $migration)) {
             $result = $this->doMigrationRemove($data, $migration);
         }
 
@@ -237,7 +237,8 @@ class Migrate
                 'success' => ['white', 'bg_green', 'bold'],
                 'warning' => ['white', 'bg_red', 'bold'],
                 'important' => 'bold',
-            ]);
+            ]
+        );
     }
 
     private function output(string $str, bool $newLine = true, ?string $style = null): void

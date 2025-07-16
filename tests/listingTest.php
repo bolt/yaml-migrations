@@ -16,6 +16,6 @@ class listingTest extends TestCase
 
         $res = $migrate->list();
 
-        $this->assertSame(5, \count($res));
+        $this->assertSame(14, \count($res));
     }
 }
