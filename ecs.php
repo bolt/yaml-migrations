@@ -7,9 +7,6 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 use PhpCsFixer\Fixer\Alias\MbStrFunctionsFixer;
 use PhpCsFixer\Fixer\ArrayNotation\NoWhitespaceBeforeCommaInArrayFixer;
 use PhpCsFixer\Fixer\ArrayNotation\WhitespaceAfterCommaInArrayFixer;
-use PhpCsFixer\Fixer\Basic\BracesFixer;
-use PhpCsFixer\Fixer\Basic\Psr0Fixer;
-use PhpCsFixer\Fixer\Basic\Psr4Fixer;
 use PhpCsFixer\Fixer\CastNotation\LowercaseCastFixer;
 use PhpCsFixer\Fixer\CastNotation\ShortScalarCastFixer;
 use PhpCsFixer\Fixer\ClassNotation\FinalInternalClassFixer;
@@ -22,8 +19,8 @@ use PhpCsFixer\Fixer\Import\FullyQualifiedStrictTypesFixer;
 use PhpCsFixer\Fixer\Import\NoLeadingImportSlashFixer;
 use PhpCsFixer\Fixer\Import\OrderedImportsFixer;
 use PhpCsFixer\Fixer\LanguageConstruct\DeclareEqualNormalizeFixer;
+use PhpCsFixer\Fixer\Operator\ConcatSpaceFixer;
 use PhpCsFixer\Fixer\Operator\IncrementStyleFixer;
-use PhpCsFixer\Fixer\Operator\NewWithBracesFixer;
 use PhpCsFixer\Fixer\Operator\TernaryOperatorSpacesFixer;
 use PhpCsFixer\Fixer\Phpdoc\NoSuperfluousPhpdocTagsFixer;
 use PhpCsFixer\Fixer\Phpdoc\PhpdocAlignFixer;
@@ -34,102 +31,49 @@ use PhpCsFixer\Fixer\PhpUnit\PhpUnitMethodCasingFixer;
 use PhpCsFixer\Fixer\Semicolon\NoSinglelineWhitespaceBeforeSemicolonsFixer;
 use PhpCsFixer\Fixer\Whitespace\NoTrailingWhitespaceFixer;
 use Symplify\CodingStandard\Fixer\ArrayNotation\StandaloneLineInMultilineArrayFixer;
-use Symplify\CodingStandard\Fixer\Commenting\RemoveSuperfluousDocBlockWhitespaceFixer;
 use Symplify\CodingStandard\Fixer\Strict\BlankLineAfterStrictTypesFixer;
-use Symplify\EasyCodingStandard\ValueObject\Option;
-use Symplify\EasyCodingStandard\ValueObject\Set\SetList;
+use Symplify\EasyCodingStandard\Config\ECSConfig;
 
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $parameters = $containerConfigurator->parameters();
-
-    $parameters->set(Option::SETS, [SetList::CLEAN_CODE, SetList::COMMON, SetList::PHP_70, SetList::PHP_71, SetList::PSR_12, SetList::SYMFONY, SetList::SYMFONY_RISKY]);
-
-    $parameters->set(Option::PATHS, [__DIR__.'/']);
-
-    $parameters->set(Option::EXCLUDE_PATHS, [__DIR__.'/vendor/*', __DIR__.'/var/*']);
-
-    $parameters->set(Option::CACHE_DIRECTORY, 'var/cache/ecs');
-
-    $parameters->set(Option::SKIP, [
+return ECSConfig::configure()
+    ->withPaths([__DIR__ . '/src', __DIR__ . '/tests'])
+    ->withRules([
+        StandaloneLineInMultilineArrayFixer::class,
+        BlankLineAfterStrictTypesFixer::class,
+        PhpUnitMethodCasingFixer::class,
+        FinalInternalClassFixer::class,
+        MbStrFunctionsFixer::class,
+        LowercaseCastFixer::class,
+        ShortScalarCastFixer::class,
+        BlankLineAfterOpeningTagFixer::class,
+        NoLeadingImportSlashFixer::class,
+        NoBlankLinesAfterClassOpeningFixer::class,
+        TernaryOperatorSpacesFixer::class,
+        ReturnTypeDeclarationFixer::class,
+        NoTrailingWhitespaceFixer::class,
+        NoSinglelineWhitespaceBeforeSemicolonsFixer::class,
+        NoWhitespaceBeforeCommaInArrayFixer::class,
+        WhitespaceAfterCommaInArrayFixer::class,
+        PhpdocToReturnTypeFixer::class,
+        FullyQualifiedStrictTypesFixer::class,
+        NoSuperfluousPhpdocTagsFixer::class,
+    ])
+    ->withConfiguredRule(OrderedImportsFixer::class, [
+        'imports_order' => ['class', 'const', 'function'],
+    ])
+    ->withConfiguredRule(DeclareEqualNormalizeFixer::class, [
+        'space' => 'none',
+    ])
+    ->withConfiguredRule(VisibilityRequiredFixer::class, [
+        'elements' => ['const', 'method', 'property'],
+    ])
+    ->withConfiguredRule(PhpdocLineSpanFixer::class, [
+        'property' => 'single',
+    ])
+    ->withSkip([
         OrderedClassElementsFixer::class => null,
         IncrementStyleFixer::class => null,
         PhpdocSummaryFixer::class => null,
         PhpdocAlignFixer::class => null,
-    ]);
-
-    $services = $containerConfigurator->services();
-
-    $services->set(StandaloneLineInMultilineArrayFixer::class);
-
-    $services->set(BlankLineAfterStrictTypesFixer::class);
-
-    $services->set(RemoveSuperfluousDocBlockWhitespaceFixer::class);
-
-    $services->set(PhpUnitMethodCasingFixer::class);
-
-    $services->set(FinalInternalClassFixer::class);
-
-    $services->set(MbStrFunctionsFixer::class);
-
-    $services->set(Psr0Fixer::class);
-
-    $services->set(Psr4Fixer::class);
-
-    $services->set(LowercaseCastFixer::class);
-
-    $services->set(ShortScalarCastFixer::class);
-
-    $services->set(BlankLineAfterOpeningTagFixer::class);
-
-    $services->set(NoLeadingImportSlashFixer::class);
-
-    $services->set(OrderedImportsFixer::class)
-        ->call('configure', [[
-            'importsOrder' => ['class', 'const', 'function'],
-        ]]);
-
-    $services->set(DeclareEqualNormalizeFixer::class)
-        ->call('configure', [[
-            'space' => 'none',
-        ]]);
-
-    $services->set(NewWithBracesFixer::class);
-
-    $services->set(BracesFixer::class)
-        ->call('configure', [[
-            'allow_single_line_closure' => false,
-            'position_after_functions_and_oop_constructs' => 'next',
-            'position_after_control_structures' => 'same',
-            'position_after_anonymous_constructs' => 'same',
-        ]]);
-
-    $services->set(NoBlankLinesAfterClassOpeningFixer::class);
-
-    $services->set(VisibilityRequiredFixer::class)
-        ->call('configure', [[
-            'elements' => ['const', 'method', 'property'],
-        ]]);
-
-    $services->set(TernaryOperatorSpacesFixer::class);
-
-    $services->set(ReturnTypeDeclarationFixer::class);
-
-    $services->set(NoTrailingWhitespaceFixer::class);
-
-    $services->set(NoSinglelineWhitespaceBeforeSemicolonsFixer::class);
-
-    $services->set(NoWhitespaceBeforeCommaInArrayFixer::class);
-
-    $services->set(WhitespaceAfterCommaInArrayFixer::class);
-
-    $services->set(PhpdocToReturnTypeFixer::class);
-
-    $services->set(FullyQualifiedStrictTypesFixer::class);
-
-    $services->set(NoSuperfluousPhpdocTagsFixer::class);
-
-    $services->set(PhpdocLineSpanFixer::class)
-        ->call('configure', [[
-            'property' => 'single',
-        ]]);
-};
+        ConcatSpaceFixer::class => null,
+    ])
+    ->withPreparedSets(psr12: true, common: true, cleanCode: true);
