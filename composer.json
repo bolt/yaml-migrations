@@ -33,7 +33,7 @@
     },
     "replace": {
         "bobdenotter/yaml-migrations": "*"
-    }
+    },
     "bin": [
         "bin/yaml-migrate"
     ],
