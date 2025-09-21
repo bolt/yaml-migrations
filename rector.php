@@ -7,7 +7,7 @@ use Rector\Config\RectorConfig;
 
 return RectorConfig::configure()
     ->withCache('./var/cache/rector', FileCacheStorage::class)
-    ->withPaths(['./src'])
+    ->withPaths(['./bin', './src'])
     ->withImportNames()
     ->withParallel(timeoutSeconds: 180, jobSize: 10)
     ->withSymfonyContainerXml(__DIR__ . '/var/cache/dev/App_KernelDevDebugContainer.xml')

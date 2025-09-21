@@ -2,6 +2,12 @@
 
 A library to facilitate migrations for YAML configuration files
 
+## List available migrations
+
+```bash
+bin/yaml-migrate available
+```
+
 ## Run migrations
 
 Standalone:
@@ -10,16 +16,22 @@ Standalone:
 bin/yaml-migrate process -c config.yaml -v
 ```
 
+The configuration file can be configured:
+
+```bash
+bin/yaml-migrate process -c config.yaml
+```
+
 Run a single file forcibly, convenient for testing: 
 
 ```
-bin/yaml-migrate process -c config.yaml -v -f m_replace.yaml
+bin/yaml-migrate process -v -f m_replace.yaml
 ```
 
 Run it in the context of a Bolt installation: 
 
 ```
-vendor/bobdenotter/yaml-migrations/bin/yaml-migrate process -c vendor/bolt/core/yaml-migrations/config.yaml -v
+vendor/bolt/yaml-migrations/bin/yaml-migrate process -c vendor/bolt/core/yaml-migrations/config.yaml -v
 ````
 
 

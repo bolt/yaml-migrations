@@ -2,50 +2,42 @@
 
 declare(strict_types=1);
 
-use Commando\Command;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 use YamlMigrate\Migrate;
 
 require_once 'vendor/autoload.php';
 
-$command = new Commando\Command();
-
-// Define the command
-$command->option()
-    ->require()
-    ->describedAs('The command to run');
-
-// Define a flag "-c" a.k.a. "--config"
-$command->option('c')
-    ->aka('config')
-    ->require()
-    ->describedAs('Use this configuration file for migrations');
-
-$command->option('f')
-    ->aka('file')
-    ->describedAs('Run only on a specific file');
-
-$command->option('v')
-    ->aka('verbose')
-    ->describedAs('When set, produce more verbose output')
-    ->boolean();
-
-$command->option('s')
-    ->aka('silent')
-    ->describedAs('When set, silence output')
-    ->boolean();
-
-$migrate = new Migrate($command['config']);
-
-$migrate->setVerbose($command['v']);
-$migrate->setSilent($command['s']);
-
-/** @var \Commando\Option $argument */
-$argument = $command->getArguments()[0];
-
-if ($argument->getValue() == 'list') {
-    $migrate->list();
-} else if ($argument->getValue() == 'process') {
-    $migrate->process($command['f']);
+function addDefaultOptions(Command $command): void
+{
+    $command
+        ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Use this configuration file for migrations', 'config.yaml');
 }
 
-echo '', PHP_EOL;;
+$application = new Application();
+
+// Available command
+addDefaultOptions($application
+    ->register('available') // Cannot use list, as it clashes with the Symfony default
+    ->setDescription('Lists the available YAML migrations')
+    ->setCode(function (InputInterface $input, OutputInterface $output): int {
+        (new Migrate($output, $input->getOption('config')))->list();
+
+        return Command::SUCCESS;
+    }));
+
+// Process command
+addDefaultOptions($application
+    ->register('process')
+    ->setDescription('Processes the available YAML migrations')
+    ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'Run only on a specific file')
+    ->setCode(function (InputInterface $input, OutputInterface $output): int {
+        (new Migrate($output, $input->getOption('config')))->process($input->getOption('file'));
+
+        return Command::SUCCESS;
+    }));
+
+$application->run();
