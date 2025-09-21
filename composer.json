@@ -5,6 +5,9 @@
     "license": "MIT",
     "authors": [
         {
+            "name": "Bolt developers"
+        },
+        {
             "name": "Bob den Otter",
             "email": "bob@twokings.nl"
         }
@@ -21,12 +24,12 @@
     },
     "autoload": {
         "psr-4": {
-            "YamlMigrate\\": "src/"
+            "Bolt\\YamlMigrations\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "YamlMigrate\\Tests\\": "tests/"
+            "Bolt\\YamlMigrations\\Tests\\": "tests/"
         }
     },
     "require-dev": {
@@ -34,9 +37,6 @@
         "phpstan/phpstan": "2.1.28",
         "phpunit/phpunit": "~10",
         "rector/rector": "2.1.7"
-    },
-    "replace": {
-        "bobdenotter/yaml-migrations": "*"
     },
     "bin": [
         "bin/yaml-migrate"

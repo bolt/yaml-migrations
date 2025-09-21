@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use Bolt\YamlMigrations\Migrate;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use YamlMigrate\Migrate;
 
 require_once 'vendor/autoload.php';
 

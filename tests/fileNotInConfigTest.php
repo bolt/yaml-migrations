@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace YamlMigrate\Tests;
+namespace Bolt\YamlMigrations\Tests;
 
+use Bolt\YamlMigrations\Migrate;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\OutputInterface;
-use YamlMigrate\Migrate;
 
 class fileNotInConfigTest extends TestCase
 {
