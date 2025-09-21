@@ -152,7 +152,7 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Migrate.php',
 ];
 $ignoreErrors[] = [
-	'message' => '#^Parameter \\#1 \\$string of function trim expects string, string\\|false given\\.$#',
+	'message' => '#^Parameter \\#1 \\$string of function mb_trim expects string, string\\|false given\\.$#',
 	'identifier' => 'argument.type',
 	'count' => 1,
 	'path' => __DIR__ . '/src/Migrate.php',
