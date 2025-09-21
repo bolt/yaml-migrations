@@ -4,6 +4,7 @@
 !/sample/target/.gitkeep
 composer.phar
 
+.phpunit.result.cache
 
 ### File-system cruft and temporary files
 __*
