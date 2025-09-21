@@ -51,7 +51,7 @@ class ArrayMerge
         return $result;
     }
 
-    public static function removeArrayRecursively(array &$origin, array $removables)
+    public static function removeArrayRecursively(array &$origin, array $removables): void
     {
         foreach ($origin as $key => $value) {
             if (array_key_exists($key, $removables) && $removables[$key] === null) {
