@@ -6,6 +6,7 @@ namespace YamlMigrate;
 
 use Colors\Color;
 use Composer\Semver\Comparator;
+use Exception;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Yaml;
@@ -16,20 +17,16 @@ class Migrate
     /** @var array */
     private $config;
 
-    /** @var string */
-    private $checkpoint;
+    private ?string $checkpoint = null;
 
     /** @var Color */
     private $color;
 
-    /** @var bool */
-    private $verbose = false;
+    private bool $verbose = false;
 
-    /** @var bool */
-    private $silent = false;
+    private bool $silent = false;
 
-    /** @var array */
-    private $statistics = [];
+    private array $statistics = [];
 
     public function __construct(string $configFilename)
     {
@@ -49,7 +46,7 @@ class Migrate
         }
 
         if (file_exists($this->checkpointFilename())) {
-            $this->checkpoint = trim(file_get_contents($this->checkpointFilename()));
+            $this->checkpoint = mb_trim(file_get_contents($this->checkpointFilename()));
         }
     }
 
@@ -94,7 +91,7 @@ class Migrate
     {
         if ($onlyFilename) {
             if (! \array_key_exists($onlyFilename, $list)) {
-                throw new \Exception("File '".$onlyFilename."' is not available in configured input folder.");
+                throw new Exception("File '".$onlyFilename."' is not available in configured input folder.");
             }
 
             return $this->processFile($list[$onlyFilename]);
@@ -208,7 +205,10 @@ class Migrate
         return [];
     }
 
-    private function getListToProcess()
+    /**
+     * @return array<string, string>
+     */
+    private function getListToProcess(): array
     {
         $finder = new Finder();
 
