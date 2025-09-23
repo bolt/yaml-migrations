@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
-namespace YamlMigrate;
+namespace Bolt\YamlMigrations;
 
 class ArrayMerge
 {
+    /**
+     * @phpstan-ignore missingType.iterableValue,missingType.iterableValue,missingType.iterableValue
+     */
     public static function merge(array $arr1, array $arr2): array
     {
         return self::mergeDeepArray([$arr1, $arr2]);
@@ -13,8 +16,10 @@ class ArrayMerge
 
     /**
      * @see https://api.drupal.org/api/drupal/vendor%21wikimedia%21composer-merge-plugin%21src%21Merge%21NestedArray.php/function/NestedArray%3A%3AmergeDeepArray/8.7.x
+     *
+     * @phpstan-ignore missingType.iterableValue,missingType.iterableValue
      */
-    public static function mergeDeepArray(array $arrays, $preserveIntegerKeys = false): array
+    public static function mergeDeepArray(array $arrays, bool $preserveIntegerKeys = false): array
     {
         $result = [];
         foreach ($arrays as $array) {
@@ -51,6 +56,9 @@ class ArrayMerge
         return $result;
     }
 
+    /**
+     * @phpstan-ignore missingType.iterableValue,missingType.iterableValue
+     */
     public static function removeArrayRecursively(array &$origin, array $removables): void
     {
         foreach ($origin as $key => $value) {

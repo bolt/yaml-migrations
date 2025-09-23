@@ -5,37 +5,38 @@
     "license": "MIT",
     "authors": [
         {
+            "name": "Bolt developers"
+        },
+        {
             "name": "Bob den Otter",
             "email": "bob@twokings.nl"
         }
     ],
     "require": {
         "php": ">=8.1",
-        "bolt/commando": "^0.4 || ^1.0",
         "webimpress/safe-writer": "^2.1",
         "composer/semver": "^3.2",
-        "symfony/yaml": "^5.1 || ^6.0 || ^7.0",
+        "symfony/console": "^5.1 || ^6.0 || ^7.0",
+        "symfony/filesystem": "^5.1 || ^6.0 || ^7.0",
+        "symfony/finder": "^5.1 || ^6.0 || ^7.0",
         "symfony/var-dumper": "^5.1 || ^6.0 || ^7.0",
-        "symfony/finder": "^5.1 || ^6.0 || ^7.0"
+        "symfony/yaml": "^5.1 || ^6.0 || ^7.0"
     },
     "autoload": {
         "psr-4": {
-            "YamlMigrate\\": "src/"
+            "Bolt\\YamlMigrations\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "YamlMigrate\\Tests\\": "tests/"
+            "Bolt\\YamlMigrations\\Tests\\": "tests/"
         }
     },
     "require-dev": {
         "symplify/easy-coding-standard": "^12.5",
         "phpstan/phpstan": "2.1.28",
-        "phpunit/phpunit": ">=8.5",
+        "phpunit/phpunit": "~10",
         "rector/rector": "2.1.7"
-    },
-    "replace": {
-        "bobdenotter/yaml-migrations": "*"
     },
     "bin": [
         "bin/yaml-migrate"

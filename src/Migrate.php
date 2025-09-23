@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace YamlMigrate;
+namespace Bolt\YamlMigrations;
 
-use Colors\Color;
 use Composer\Semver\Comparator;
 use Exception;
+use RuntimeException;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Yaml;
@@ -14,25 +15,36 @@ use Webimpress\SafeWriter\FileWriter;
 
 class Migrate
 {
-    /** @var array */
-    private $config;
+    /**
+     * @var array{
+     *     migrations: string,
+     *     checkpoint?: string,
+     *     source: string,
+     *     target: string,
+     * }
+     */
+    private array $config;
 
-    private ?string $checkpoint = null;
+    private string $checkpoint = '0.0.0';
 
-    /** @var Color */
-    private $color;
+    /**
+     * @var array{
+     *  updated: 0|positive-int,
+     *  skipped: 0|positive-int,
+     *  deleted: 0|positive-int,
+     * }
+     */
+    private array $statistics = [
+        'updated' => 0,
+        'skipped' => 0,
+        'deleted' => 0,
+    ];
 
-    private bool $verbose = false;
-
-    private bool $silent = false;
-
-    private array $statistics = [];
-
-    public function __construct(string $configFilename)
-    {
+    public function __construct(
+        private readonly OutputInterface $output,
+        string $configFilename
+    ) {
         $this->initialize($configFilename);
-        $this->initColor();
-        $this->initStatistics();
     }
 
     private function initialize(string $configFilename): void
@@ -46,18 +58,21 @@ class Migrate
         }
 
         if (file_exists($this->checkpointFilename())) {
-            $this->checkpoint = mb_trim(file_get_contents($this->checkpointFilename()));
+            $this->checkpoint = mb_trim(file_get_contents($this->checkpointFilename()) ?: throw new RuntimeException('Could not get checkpoint file content'));
         }
     }
 
+    /**
+     * @return string[]
+     */
     public function list(): array
     {
         $list = $this->getListToProcess();
 
-        $this->output('Files to process: ', true, 'important');
+        $this->output->writeln('<options=bold>Files to process:</>');
         foreach ($list as $filename) {
             $filename = str_replace(\dirname(__DIR__), '…', $filename);
-            $this->output(' - '.$filename);
+            $this->output->writeln(" - {$filename}");
         }
 
         return $list;
@@ -77,16 +92,20 @@ class Migrate
                 $this->statistics['deleted'],
                 $this->statistics['skipped']
             );
-            $this->output($output, true, 'success');
+            $this->output->writeln("<fg=green>{$output}</>");
 
             // We only update the checkpoint if we process the list, not a single file
             if (! $onlyFilename && $this->statistics['updated'] > 0) {
-                $this->output('Updating checkpoint to '.$this->checkpoint, true);
+                $this->output->writeln("Updating checkpoint to {$this->checkpoint}");
                 FileWriter::writeFile($this->checkpointFilename(), $this->checkpoint);
             }
         }
     }
 
+    /**
+     * @param array<string, string> $list
+     * @throws Exception
+     */
     public function processIterator(array $list, ?string $onlyFilename = null): bool
     {
         if ($onlyFilename) {
@@ -122,7 +141,7 @@ class Migrate
         $migratedData = $this->doMigration($inputFilename, $data, $migration);
 
         if ($migratedData) {
-            // Regular data, write the file..
+            // Regular data, write the file...
             $output = Yaml::dump($migratedData, 4, 4, Yaml::DUMP_NULL_AS_TILDE);
 
             $filesystem = new Filesystem();
@@ -148,6 +167,9 @@ class Migrate
         return true;
     }
 
+    /**
+     * @phpstan-ignore missingType.iterableValue,missingType.iterableValue,missingType.iterableValue
+     */
     private function doMigration(string $filename, array $data, array $migration): ?array
     {
         $displayname = sprintf('%s/%s', basename(\dirname($filename)), basename($filename));
@@ -167,6 +189,9 @@ class Migrate
         return $result;
     }
 
+    /**
+     * @phpstan-ignore missingType.iterableValue,missingType.iterableValue,missingType.iterableValue
+     */
     private function doMigrationAdd(array $data, array $migration): ?array
     {
         $migratedData = ArrayMerge::merge($data, $migration['add']);
@@ -183,6 +208,9 @@ class Migrate
         return $migratedData;
     }
 
+    /**
+     * @phpstan-ignore missingType.iterableValue,missingType.iterableValue,missingType.iterableValue
+     */
     private function doMigrationRemove(array $data, array $migration): ?array
     {
         $migratedData = $data;
@@ -200,7 +228,10 @@ class Migrate
         return $migratedData;
     }
 
-    private function doMigrationDelete(array $migration): ?array
+    /**
+     * @phpstan-ignore missingType.iterableValue,missingType.iterableValue
+     */
+    private function doMigrationDelete(array $migration): array
     {
         return [];
     }
@@ -229,67 +260,13 @@ class Migrate
         return $list;
     }
 
-    private function initColor(): void
+    private function verboseOutput(string $str): void
     {
-        $this->color = new Color();
-        $this->color->setUserStyles(
-            [
-                'success' => ['white', 'bg_green', 'bold'],
-                'warning' => ['white', 'bg_red', 'bold'],
-                'important' => 'bold',
-            ]
-        );
-    }
-
-    private function output(string $str, bool $newLine = true, ?string $style = null): void
-    {
-        if ($this->silent) {
+        if (! $this->output->isVerbose()) {
             return;
         }
 
-        $output = ($this->color)($str);
-
-        if ($style) {
-            $output->apply($style);
-        }
-
-        echo $output.($newLine ? "\n" : '');
-    }
-
-    private function verboseOutput(string $str, bool $newLine = true, ?string $style = null): void
-    {
-        if ($this->verbose) {
-            $this->output($str, $newLine, $style);
-        }
-    }
-
-    public function isVerbose(): bool
-    {
-        return $this->verbose;
-    }
-
-    public function setVerbose(bool $verbose): void
-    {
-        $this->verbose = $verbose;
-    }
-
-    public function isSilent(): bool
-    {
-        return $this->silent;
-    }
-
-    public function setSilent(bool $silent): void
-    {
-        $this->silent = $silent;
-    }
-
-    private function initStatistics(): void
-    {
-        $this->statistics = [
-            'updated' => 0,
-            'skipped' => 0,
-            'deleted' => 0,
-        ];
+        $this->output->writeln($str);
     }
 
     private function checkpointFilename(): string
