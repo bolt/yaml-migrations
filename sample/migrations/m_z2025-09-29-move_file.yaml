@@ -1,0 +1,4 @@
+file: non-existant_source.yaml
+since: 6.0.0
+
+move: non-existent-source.yaml
