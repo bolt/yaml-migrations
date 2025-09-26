@@ -32,12 +32,14 @@ class Migrate
      *  updated: 0|positive-int,
      *  skipped: 0|positive-int,
      *  deleted: 0|positive-int,
+     *  moved: 0|positive-int,
      * }
      */
     private array $statistics = [
         'updated' => 0,
         'skipped' => 0,
         'deleted' => 0,
+        'moved' => 0,
     ];
 
     public function __construct(
@@ -86,10 +88,11 @@ class Migrate
 
         if ($success) {
             $output = sprintf(
-                'Processed %s files. Updated: %s, deleted: %s, skipped: %s.',
+                'Processed %s files. Updated: %s, deleted: %s, moved: %s, skipped: %s.',
                 \count($list),
                 $this->statistics['updated'],
                 $this->statistics['deleted'],
+                $this->statistics['moved'],
                 $this->statistics['skipped']
             );
             $this->output->writeln("<fg=green>{$output}</>");
@@ -129,37 +132,62 @@ class Migrate
     {
         $migration = Yaml::parseFile($filename, Yaml::PARSE_CUSTOM_TAGS);
 
-        $inputFilename = sprintf('%s/%s', $this->config['source'], $migration['file']);
-        $outputFilename = sprintf('%s/%s', $this->config['target'], $migration['file']);
-
-        if (is_readable($inputFilename)) {
-            $data = (array) Yaml::parseFile($inputFilename, Yaml::PARSE_CUSTOM_TAGS);
+        $sourceFilename = sprintf('%s/%s', $this->config['source'], $migration['file']);
+        if (is_readable($sourceFilename)) {
+            $data = (array) Yaml::parseFile($sourceFilename, Yaml::PARSE_CUSTOM_TAGS);
         } else {
             $data = [];
         }
 
-        $migratedData = $this->doMigration($inputFilename, $data, $migration);
-
-        if ($migratedData) {
-            // Regular data, write the file...
-            $output = Yaml::dump($migratedData, 4, 4, Yaml::DUMP_NULL_AS_TILDE);
+        // Special case for move
+        if (\array_key_exists('move', $migration)) {
+            $sourceFilename = sprintf('%s/%s', $this->config['source'], $migration['file']);
+            $targetFilename = sprintf('%s/%s', $this->config['target'], $migration['file']);
+            $targetFilenameAfterMove = sprintf('%s/%s', $this->config['target'], $migration['move']);
 
             $filesystem = new Filesystem();
-            $filesystem->mkdir(\dirname($outputFilename));
+            $filesystem->mkdir(\dirname($targetFilenameAfterMove));
 
-            FileWriter::writeFile($outputFilename, $output);
-            // FileWriter::writeFile($outputFilename . '.bak',  Yaml::dump($data, 4, 4, Yaml::DUMP_NULL_AS_TILDE));
+            if (is_readable($targetFilename)) {
+                // If the file already exists in the target folder (from previous migrations), move it in there
+                $this->verboseOutput("Moving {$targetFilename} to {$targetFilenameAfterMove}");
+                $filesystem->rename($targetFilename, $targetFilenameAfterMove);
+            } elseif ($this->config['source'] !== $this->config['target']) {
+                // Target is a different directory, copy it instead
+                $this->verboseOutput("Copying (moving) {$sourceFilename} to {$targetFilenameAfterMove}");
+                $filesystem->copy($sourceFilename, $targetFilenameAfterMove);
+            } else {
+                // Otherwise, move it from the source to target
+                $this->verboseOutput("Moving {$sourceFilename} to {$targetFilenameAfterMove}");
+                $filesystem->rename($sourceFilename, $targetFilenameAfterMove);
+            }
 
-            $this->verboseOutput(" - Written file '".$outputFilename."'.");
-            $this->statistics['updated']++;
-        } elseif (\is_array($migratedData)) {
-            // If the array is empty, we should _remove_ the target file
-            $filesystem = new Filesystem();
-            $filesystem->mkdir(\dirname($outputFilename));
-            $filesystem->remove($outputFilename);
+            $this->statistics['moved']++;
+        } else {
+            $migratedData = $this->doMigration($sourceFilename, $data, $migration);
 
-            $this->verboseOutput(" - Deleting file '".$migration['file']."'.");
-            $this->statistics['deleted']++;
+            $targetFilename = sprintf('%s/%s', $this->config['target'], $migration['file']);
+            if ($migratedData) {
+                // Regular data, write the file...
+                $output = Yaml::dump($migratedData, 4, 4, Yaml::DUMP_NULL_AS_TILDE);
+
+                $filesystem = new Filesystem();
+                $filesystem->mkdir(\dirname($targetFilename));
+
+                FileWriter::writeFile($targetFilename, $output);
+                // FileWriter::writeFile($outputFilename . '.bak',  Yaml::dump($data, 4, 4, Yaml::DUMP_NULL_AS_TILDE));
+
+                $this->verboseOutput(" - Written file '" . $targetFilename . "'.");
+                $this->statistics['updated']++;
+            } elseif (\is_array($migratedData)) {
+                // If the array is empty, we should _remove_ the target file
+                $filesystem = new Filesystem();
+                $filesystem->mkdir(\dirname($targetFilename));
+                $filesystem->remove($targetFilename);
+
+                $this->verboseOutput(" - Deleting file '" . $migration['file'] . "'.");
+                $this->statistics['deleted']++;
+            }
         }
 
         $this->setMaxCheckpoint($migration['since']);
