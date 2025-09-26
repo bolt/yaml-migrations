@@ -2,7 +2,7 @@
 
 A library to facilitate migrations for YAML configuration files
 
-> This repository was forked from https://github.com/bobdenotter/yaml-migrations and updated to be used with newer versions of https://github.com/bolt/core.
+> This repository was forked from [bobdenotter/yaml-migrations](https://github.com/bobdenotter/yaml-migrations) and updated to be used with newer versions of [bolt/core](https://github.com/bolt/core).
 
 ## List available migrations
 
