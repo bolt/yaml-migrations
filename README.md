@@ -37,8 +37,8 @@ vendor/bolt/yaml-migrations/bin/yaml-migrate process -c vendor/bolt/core/yaml-mi
 ````
 
 
-Tip: Reset the checkpoint: 
+Tip: Reset the checkpoint and output:
 
 ```bash
-echo '1.0.0' > sample/migrations/checkpoint.txt
+echo '1.0.0' > sample/migrations/checkpoint.txt && rm -rf sample/target/*
 ```
