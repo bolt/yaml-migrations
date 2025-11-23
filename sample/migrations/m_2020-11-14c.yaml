@@ -2,11 +2,11 @@ file: services_duplicate.yaml
 since: 1.0.3
 
 add:
-    services:
-        _instanceof:
-            Bolt\Menu\ExtensionBackendMenuInterface:
-                tags: [ 'bolt.extension_backend_menu' ]
-        Bolt\Menu\BackendMenuBuilder:
-            arguments:
-                - "@knp_menu.factory"
-                - !tagged_iterator bolt.extension_backend_menu
+  services:
+    _instanceof:
+      Bolt\Menu\ExtensionBackendMenuInterface:
+        tags: [ 'bolt.extension_backend_menu' ]
+    Bolt\Menu\BackendMenuBuilder:
+      arguments:
+        - "@knp_menu.factory"
+        - !tagged_iterator bolt.extension_backend_menu

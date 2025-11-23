@@ -4,5 +4,5 @@ file: empty_source.yaml
 since: 1.0.2
 
 add:
-    foo: one
+  foo: one
 

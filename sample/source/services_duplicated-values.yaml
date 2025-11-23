@@ -1,6 +1,5 @@
-
 services:
-        autowire: true
-        autoconfigure: true
-        public: false
-        foo: false
+  autowire: true
+  autoconfigure: true
+  public: false
+  foo: false
