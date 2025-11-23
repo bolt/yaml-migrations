@@ -9,4 +9,4 @@ add:
     one: two
     three: four
   qux:
-      five: [seven, [ eight, nine] ]
+    five: [ seven, [ eight, nine ] ]

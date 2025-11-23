@@ -169,13 +169,13 @@ class Migrate
             $targetFilename = sprintf('%s/%s', $this->config['target'], $migration['file']);
             if ($migratedData) {
                 // Regular data, write the file...
-                $output = Yaml::dump($migratedData, 4, 4, Yaml::DUMP_NULL_AS_TILDE);
+                $output = Yaml::dump($migratedData, 4, 2, Yaml::DUMP_NULL_AS_TILDE);
 
                 $filesystem = new Filesystem();
                 $filesystem->mkdir(\dirname($targetFilename));
 
                 FileWriter::writeFile($targetFilename, $output);
-                // FileWriter::writeFile($outputFilename . '.bak',  Yaml::dump($data, 4, 4, Yaml::DUMP_NULL_AS_TILDE));
+                // FileWriter::writeFile($outputFilename . '.bak',  Yaml::dump($data, 4, 2, Yaml::DUMP_NULL_AS_TILDE));
 
                 $this->verboseOutput(" - Written file '" . $targetFilename . "'.");
                 $this->statistics['updated']++;

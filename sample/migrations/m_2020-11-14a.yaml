@@ -2,7 +2,7 @@ file: test1.yaml
 since: 1.0.2
 
 add:
-    foo:
-        - bar
-        - qux
+  foo:
+    - bar
+    - qux
 
