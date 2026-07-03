@@ -56,7 +56,7 @@ class Migrate
         } elseif (file_exists(\dirname(__DIR__).'/'.$configFilename)) {
             $this->config = Yaml::parseFile(\dirname(__DIR__).'/'.$configFilename);
         } else {
-            die("Config file {$configFilename} not found.");
+            throw new RuntimeException("Config file {$configFilename} not found.");
         }
 
         if (file_exists($this->checkpointFilename())) {
@@ -295,6 +295,13 @@ class Migrate
 
         foreach ($files as $file) {
             $yaml = Yaml::parseFile($file->getRealPath(), Yaml::PARSE_CUSTOM_TAGS);
+
+            if (! \is_array($yaml) || ! \array_key_exists('since', $yaml)) {
+                throw new RuntimeException(sprintf(
+                    "Migration '%s' is missing the required 'since' version key.",
+                    $file->getFilename()
+                ));
+            }
 
             if (Comparator::greaterThan($yaml['since'], $this->checkpoint)) {
                 $list[$file->getFilename()] = $file->getRealPath();
