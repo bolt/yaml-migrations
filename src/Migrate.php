@@ -98,7 +98,8 @@ class Migrate
             $this->output->writeln("<fg=green>{$output}</>");
 
             // We only update the checkpoint if we process the list, not a single file
-            if (! $onlyFilename && $this->statistics['updated'] > 0) {
+            $processed = $this->statistics['updated'] + $this->statistics['deleted'] + $this->statistics['moved'];
+            if (! $onlyFilename && $processed > 0) {
                 $this->output->writeln("Updating checkpoint to {$this->checkpoint}");
                 FileWriter::writeFile($this->checkpointFilename(), $this->checkpoint);
             }
