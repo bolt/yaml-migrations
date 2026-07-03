@@ -120,16 +120,36 @@ class Migrate
             return $this->processFile($list[$onlyFilename]);
         }
 
-        $success = true;
-
         foreach ($list as $filename) {
-            $success = $success && $this->processFile($filename);
+            // Stop at the first failure so a broken migration cannot advance
+            // the checkpoint or let subsequent (possibly dependent) migrations
+            // run on top of a half-applied state.
+            if (! $this->processFile($filename)) {
+                return false;
+            }
         }
 
-        return $success;
+        return true;
     }
 
     private function processFile(string $filename): bool
+    {
+        try {
+            $this->doProcessFile($filename);
+        } catch (\Throwable $e) {
+            $this->output->writeln(sprintf(
+                "<error>Failed to process migration '%s': %s</error>",
+                $filename,
+                $e->getMessage()
+            ));
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function doProcessFile(string $filename): void
     {
         $migration = Yaml::parseFile($filename, Yaml::PARSE_CUSTOM_TAGS);
 
@@ -191,8 +211,6 @@ class Migrate
         }
 
         $this->setMaxCheckpoint($migration['since']);
-
-        return true;
     }
 
     /**
