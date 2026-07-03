@@ -133,7 +133,7 @@ class Migrate
     {
         $migration = Yaml::parseFile($filename, Yaml::PARSE_CUSTOM_TAGS);
 
-        $sourceFilename = sprintf('%s/%s', $this->config['source'], $migration['file']);
+        $sourceFilename = $this->safeJoin($this->config['source'], $migration['file']);
         if (is_readable($sourceFilename)) {
             $data = (array) Yaml::parseFile($sourceFilename, Yaml::PARSE_CUSTOM_TAGS);
         } else {
@@ -142,9 +142,8 @@ class Migrate
 
         // Special case for move
         if (\array_key_exists('move', $migration)) {
-            $sourceFilename = sprintf('%s/%s', $this->config['source'], $migration['file']);
-            $targetFilename = sprintf('%s/%s', $this->config['target'], $migration['file']);
-            $targetFilenameAfterMove = sprintf('%s/%s', $this->config['target'], $migration['move']);
+            $targetFilename = $this->safeJoin($this->config['target'], $migration['file']);
+            $targetFilenameAfterMove = $this->safeJoin($this->config['target'], $migration['move']);
 
             $filesystem = new Filesystem();
             $filesystem->mkdir(\dirname($targetFilenameAfterMove));
@@ -167,7 +166,7 @@ class Migrate
         } else {
             $migratedData = $this->doMigration($sourceFilename, $data, $migration);
 
-            $targetFilename = sprintf('%s/%s', $this->config['target'], $migration['file']);
+            $targetFilename = $this->safeJoin($this->config['target'], $migration['file']);
             if ($migratedData) {
                 // Regular data, write the file...
                 $output = Yaml::dump($migratedData, 4, 2, Yaml::DUMP_NULL_AS_TILDE);
@@ -287,6 +286,62 @@ class Migrate
         ksort($list);
 
         return $list;
+    }
+
+    /**
+     * Join a migration-supplied relative path onto a configured base
+     * directory, rejecting any path that would escape that base (e.g. via
+     * `../`). Returns the normalized, absolute path.
+     */
+    private function safeJoin(string $base, string $relative): string
+    {
+        $baseAbsolute = $this->normalizePath($this->toAbsolutePath($base));
+        $combined = $this->normalizePath($baseAbsolute.'/'.$relative);
+
+        if ($combined !== $baseAbsolute && ! str_starts_with($combined, $baseAbsolute.'/')) {
+            throw new RuntimeException(sprintf(
+                "Migration path '%s' escapes the configured '%s' directory.",
+                $relative,
+                $base
+            ));
+        }
+
+        return $combined;
+    }
+
+    private function toAbsolutePath(string $path): string
+    {
+        if (str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        return (getcwd() ?: '.').'/'.$path;
+    }
+
+    /**
+     * Lexically resolve `.` and `..` segments without touching the
+     * filesystem, so it works for paths that do not exist yet.
+     */
+    private function normalizePath(string $path): string
+    {
+        $isAbsolute = str_starts_with($path, '/');
+        $segments = [];
+
+        foreach (explode('/', $path) as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+
+            if ($segment === '..') {
+                array_pop($segments);
+
+                continue;
+            }
+
+            $segments[] = $segment;
+        }
+
+        return ($isAbsolute ? '/' : '').implode('/', $segments);
     }
 
     private function verboseOutput(string $str): void
