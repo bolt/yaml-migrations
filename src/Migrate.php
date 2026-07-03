@@ -56,7 +56,7 @@ class Migrate
         } elseif (file_exists(\dirname(__DIR__).'/'.$configFilename)) {
             $this->config = Yaml::parseFile(\dirname(__DIR__).'/'.$configFilename);
         } else {
-            die("Config file {$configFilename} not found.");
+            throw new RuntimeException("Config file {$configFilename} not found.");
         }
 
         if (file_exists($this->checkpointFilename())) {
@@ -98,7 +98,8 @@ class Migrate
             $this->output->writeln("<fg=green>{$output}</>");
 
             // We only update the checkpoint if we process the list, not a single file
-            if (! $onlyFilename && $this->statistics['updated'] > 0) {
+            $processed = $this->statistics['updated'] + $this->statistics['deleted'] + $this->statistics['moved'];
+            if (! $onlyFilename && $processed > 0) {
                 $this->output->writeln("Updating checkpoint to {$this->checkpoint}");
                 FileWriter::writeFile($this->checkpointFilename(), $this->checkpoint);
             }
@@ -119,20 +120,40 @@ class Migrate
             return $this->processFile($list[$onlyFilename]);
         }
 
-        $success = true;
-
         foreach ($list as $filename) {
-            $success = $success && $this->processFile($filename);
+            // Stop at the first failure so a broken migration cannot advance
+            // the checkpoint or let subsequent (possibly dependent) migrations
+            // run on top of a half-applied state.
+            if (! $this->processFile($filename)) {
+                return false;
+            }
         }
 
-        return $success;
+        return true;
     }
 
     private function processFile(string $filename): bool
     {
+        try {
+            $this->doProcessFile($filename);
+        } catch (\Throwable $e) {
+            $this->output->writeln(sprintf(
+                "<error>Failed to process migration '%s': %s</error>",
+                $filename,
+                $e->getMessage()
+            ));
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function doProcessFile(string $filename): void
+    {
         $migration = Yaml::parseFile($filename, Yaml::PARSE_CUSTOM_TAGS);
 
-        $sourceFilename = sprintf('%s/%s', $this->config['source'], $migration['file']);
+        $sourceFilename = $this->safeJoin($this->config['source'], $migration['file']);
         if (is_readable($sourceFilename)) {
             $data = (array) Yaml::parseFile($sourceFilename, Yaml::PARSE_CUSTOM_TAGS);
         } else {
@@ -141,9 +162,8 @@ class Migrate
 
         // Special case for move
         if (\array_key_exists('move', $migration)) {
-            $sourceFilename = sprintf('%s/%s', $this->config['source'], $migration['file']);
-            $targetFilename = sprintf('%s/%s', $this->config['target'], $migration['file']);
-            $targetFilenameAfterMove = sprintf('%s/%s', $this->config['target'], $migration['move']);
+            $targetFilename = $this->safeJoin($this->config['target'], $migration['file']);
+            $targetFilenameAfterMove = $this->safeJoin($this->config['target'], $migration['move']);
 
             $filesystem = new Filesystem();
             $filesystem->mkdir(\dirname($targetFilenameAfterMove));
@@ -166,7 +186,7 @@ class Migrate
         } else {
             $migratedData = $this->doMigration($sourceFilename, $data, $migration);
 
-            $targetFilename = sprintf('%s/%s', $this->config['target'], $migration['file']);
+            $targetFilename = $this->safeJoin($this->config['target'], $migration['file']);
             if ($migratedData) {
                 // Regular data, write the file...
                 $output = Yaml::dump($migratedData, 4, 2, Yaml::DUMP_NULL_AS_TILDE);
@@ -191,8 +211,6 @@ class Migrate
         }
 
         $this->setMaxCheckpoint($migration['since']);
-
-        return true;
     }
 
     /**
@@ -278,6 +296,24 @@ class Migrate
         foreach ($files as $file) {
             $yaml = Yaml::parseFile($file->getRealPath(), Yaml::PARSE_CUSTOM_TAGS);
 
+            if (! \is_array($yaml) || ! \array_key_exists('since', $yaml)) {
+                throw new RuntimeException(sprintf(
+                    "Migration '%s' is missing the required 'since' version key.",
+                    $file->getFilename()
+                ));
+            }
+
+            if (! \is_string($yaml['since'])) {
+                // Unquoted YAML numbers are parsed as int/float, so `1.10`
+                // becomes the float 1.1 and is silently mis-ordered. Require a
+                // quoted string so the version is preserved exactly.
+                throw new RuntimeException(sprintf(
+                    "Migration '%s' has a non-string 'since' value; wrap the version "
+                    .'in quotes (e.g. "1.10") so YAML does not parse it as a number.',
+                    $file->getFilename()
+                ));
+            }
+
             if (Comparator::greaterThan($yaml['since'], $this->checkpoint)) {
                 $list[$file->getFilename()] = $file->getRealPath();
             }
@@ -286,6 +322,62 @@ class Migrate
         ksort($list);
 
         return $list;
+    }
+
+    /**
+     * Join a migration-supplied relative path onto a configured base
+     * directory, rejecting any path that would escape that base (e.g. via
+     * `../`). Returns the normalized, absolute path.
+     */
+    private function safeJoin(string $base, string $relative): string
+    {
+        $baseAbsolute = $this->normalizePath($this->toAbsolutePath($base));
+        $combined = $this->normalizePath($baseAbsolute.'/'.$relative);
+
+        if ($combined !== $baseAbsolute && ! str_starts_with($combined, $baseAbsolute.'/')) {
+            throw new RuntimeException(sprintf(
+                "Migration path '%s' escapes the configured '%s' directory.",
+                $relative,
+                $base
+            ));
+        }
+
+        return $combined;
+    }
+
+    private function toAbsolutePath(string $path): string
+    {
+        if (str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        return (getcwd() ?: '.').'/'.$path;
+    }
+
+    /**
+     * Lexically resolve `.` and `..` segments without touching the
+     * filesystem, so it works for paths that do not exist yet.
+     */
+    private function normalizePath(string $path): string
+    {
+        $isAbsolute = str_starts_with($path, '/');
+        $segments = [];
+
+        foreach (explode('/', $path) as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+
+            if ($segment === '..') {
+                array_pop($segments);
+
+                continue;
+            }
+
+            $segments[] = $segment;
+        }
+
+        return ($isAbsolute ? '/' : '').implode('/', $segments);
     }
 
     private function verboseOutput(string $str): void
