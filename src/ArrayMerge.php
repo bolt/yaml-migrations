@@ -70,9 +70,6 @@ class ArrayMerge
                 // nested array. If the migration points deeper than the data
                 // goes, there is nothing to remove and we leave the value as-is.
                 self::removeArrayRecursively($origin[$key], $removables[$key]);
-            } elseif (is_array($value) && array_key_exists($key, $removables)) {
-                // If the current key value is an array, check it too.
-                self::removeArrayRecursively($value, $removables[$key]);
             }
             // Current key needs to be kept
         }
