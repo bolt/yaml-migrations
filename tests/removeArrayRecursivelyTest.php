@@ -12,29 +12,47 @@ class removeArrayRecursivelyTest extends TestCase
     public function testRemovePathDeeperThanScalarDataIsLeftUntouched(): void
     {
         // The data has a scalar where the migration expects a nested map.
-        $data = ['security' => 'somestring'];
-        $removables = ['security' => ['role_hierarchy' => null]];
+        $data = [
+            'security' => 'somestring',
+        ];
+        $removables = [
+            'security' => [
+                'role_hierarchy' => null,
+            ],
+        ];
 
         ArrayMerge::removeArrayRecursively($data, $removables);
 
         // Nothing to remove: the scalar has no `role_hierarchy` child, so the
         // data must be left untouched rather than crashing with a TypeError.
-        $this->assertSame(['security' => 'somestring'], $data);
+        $this->assertSame([
+            'security' => 'somestring',
+        ], $data);
     }
 
     public function testRemoveNestedKeyStillWorks(): void
     {
         $data = [
             'security' => [
-                'role_hierarchy' => ['ADMIN' => 'USER'],
+                'role_hierarchy' => [
+                    'ADMIN' => 'USER',
+                ],
                 'keep' => 'me',
             ],
         ];
-        $removables = ['security' => ['role_hierarchy' => null]];
+        $removables = [
+            'security' => [
+                'role_hierarchy' => null,
+            ],
+        ];
 
         ArrayMerge::removeArrayRecursively($data, $removables);
 
-        $this->assertSame(['security' => ['keep' => 'me']], $data);
+        $this->assertSame([
+            'security' => [
+                'keep' => 'me',
+            ],
+        ], $data);
     }
 
     public function testRemoveDeeplyNestedKeyKeepingSiblings(): void
@@ -70,7 +88,9 @@ class removeArrayRecursivelyTest extends TestCase
         $this->assertSame([
             'security' => [
                 'foo' => [
-                    'bar' => ['keep' => 'me'],
+                    'bar' => [
+                        'keep' => 'me',
+                    ],
                     'sibling' => 'stays',
                 ],
             ],
@@ -82,14 +102,20 @@ class removeArrayRecursivelyTest extends TestCase
     {
         $data = [
             'list' => ['a', 'b', 'c'],
-            'map' => ['one' => 1, 'two' => 2],
+            'map' => [
+                'one' => 1,
+                'two' => 2,
+            ],
         ];
 
         ArrayMerge::removeArrayRecursively($data, []);
 
         $this->assertSame([
             'list' => ['a', 'b', 'c'],
-            'map' => ['one' => 1, 'two' => 2],
+            'map' => [
+                'one' => 1,
+                'two' => 2,
+            ],
         ], $data);
     }
 }
