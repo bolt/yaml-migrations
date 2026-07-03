@@ -303,6 +303,17 @@ class Migrate
                 ));
             }
 
+            if (! \is_string($yaml['since'])) {
+                // Unquoted YAML numbers are parsed as int/float, so `1.10`
+                // becomes the float 1.1 and is silently mis-ordered. Require a
+                // quoted string so the version is preserved exactly.
+                throw new RuntimeException(sprintf(
+                    "Migration '%s' has a non-string 'since' value; wrap the version "
+                    .'in quotes (e.g. "1.10") so YAML does not parse it as a number.',
+                    $file->getFilename()
+                ));
+            }
+
             if (Comparator::greaterThan($yaml['since'], $this->checkpoint)) {
                 $list[$file->getFilename()] = $file->getRealPath();
             }
