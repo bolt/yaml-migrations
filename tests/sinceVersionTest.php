@@ -85,4 +85,26 @@ class sinceVersionTest extends TestCase
 
         $this->assertCount(1, $list, 'A quoted string version must be accepted.');
     }
+
+    public function testQuotedSinceIsWrittenToCheckpointVerbatim(): void
+    {
+        $this->filesystem->dumpFile($this->workspace.'/migrations/m_2025-01-01-quoted.yaml', <<<YAML
+        file: whatever.yaml
+        since: "1.10"
+
+        add:
+          hello: world
+        YAML);
+
+        $output = $this->createMock(OutputInterface::class);
+        (new Migrate($output, $this->writeConfig()))->process();
+
+        // The version must survive processing exactly as authored: "1.10", not
+        // the float-mangled "1.1".
+        $this->assertSame(
+            '1.10',
+            trim((string) file_get_contents($this->workspace.'/checkpoint.txt')),
+            'The exact string version must be written to the checkpoint file.'
+        );
+    }
 }
